@@ -1,10 +1,51 @@
 import streamlit as st
+import sqlite3
+import hashlib
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet_v3 import preprocess_input
 import numpy as np
 from Disease_Identification import disease_identification_page
 from Learn_More import learn_more_page
 
+# Database setup
+def create_users_table():
+    conn = sqlite3.connect('skin_disease_identification.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            email TEXT NOT NULL,
+            password TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+
+def make_hash(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def add_user(username, email, password):
+    conn = sqlite3.connect('skin_disease_identification.db')
+    c = conn.cursor()
+    c.execute('INSERT INTO users(username, email, password) VALUES (?, ?, ?)', 
+              (username, email, password))
+    conn.commit()
+    conn.close()
+
+
+
+def login_user(username, password):
+    conn = sqlite3.connect('skin_disease_identification.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+    data = c.fetchall()
+    conn.close()
+    return data
+
+#Model Loading
 
 @st.cache_resource()
 def load_model():
@@ -22,7 +63,7 @@ def model_prediction(test_image_path):
 
 #Sidebar
 st.sidebar.title("Dashboard")
-app_mode = st.sidebar.selectbox("Select Page",["Home","Disease Identification","Learn More","DermaBot","Contact Expert","Login"])
+app_mode = st.sidebar.selectbox("Select Page",["Home","Disease Identification","Learn More","DermaBot","Contact Expert","Login","Register"])
 
 
 if app_mode == "Home":
@@ -91,8 +132,51 @@ Have questions or want to collaborate with us? [Contact our team](#) to find out
 
     """)
 
+
 elif app_mode == "Disease Identification":
-    disease_identification_page()
+    if "logged_in" in st.session_state and st.session_state["logged_in"]:
+        disease_identification_page()
+    else:
+        st.warning("⚠ Please log in to access Disease Identification.")
 
 elif app_mode == "Learn More":
-        learn_more_page()
+    learn_more_page()
+
+elif app_mode == "Register":
+    st.subheader("Create New Account")
+    new_user = st.text_input("Username")
+    new_email = st.text_input("Email")
+    new_password = st.text_input("Password", type='password')
+
+    if st.button("Register"):
+        if new_user and new_email and new_password:
+            try:
+                add_user(new_user, new_email, make_hash(new_password))
+                st.success("✅ Account created successfully!")
+                st.info("Please go to Login page to log in.")
+            except sqlite3.IntegrityError:
+                st.error("❌ Username already exists.")
+        else:
+            st.warning("⚠ Please enter username, email, and password.")
+
+elif app_mode == "Login":
+    st.subheader("Login to Your Account")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type='password')
+
+    if st.button("Login"):
+        hashed_pass = make_hash(password)
+        result = login_user(username, hashed_pass)
+        if result:
+            st.session_state["logged_in"] = True
+            st.session_state["username"] = username
+            st.success(f"✅ Logged in as {username}")
+        else:
+            st.error("❌ Invalid Username or Password")
+
+# If logged in, show extra features
+if "logged_in" in st.session_state and st.session_state["logged_in"]:
+    st.sidebar.markdown(f"**Logged in as:** {st.session_state['username']}")
+    if st.sidebar.button("Logout"):
+        st.session_state.clear()
+        st.sidebar.success("✅ Logged out successfully")
