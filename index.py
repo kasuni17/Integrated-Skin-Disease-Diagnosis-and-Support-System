@@ -7,6 +7,8 @@ import numpy as np
 from Disease_Identification import disease_identification_page
 from Learn_More import learn_more_page
 from expert_panel import expert_panel_page
+from contact_expert import contact_expert_page
+
 
 
 # Database setup
@@ -25,12 +27,62 @@ def create_users_table():
             )
         ''')
         conn.commit()
-create_users_table()
+
+def create_queries_table():
+    with sqlite3.connect('skin_disease_identification.db') as conn:
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS queries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                question TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+
+
+# --- NEW FUNCTION FOR replies TABLE ---
+import time
+def create_replies_table():
+    retries = 5
+    while retries > 0:
+        try:
+            with sqlite3.connect('skin_disease_identification.db', timeout=10) as conn:
+                c = conn.cursor()
+                c.execute('''
+                    CREATE TABLE IF NOT EXISTS replies (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        query_id INTEGER NOT NULL,
+                        expert_username TEXT,
+                        reply TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (query_id) REFERENCES queries (id)
+                    )
+                ''')
+                conn.commit()
+            break
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                time.sleep(1)
+                retries -= 1
+            else:
+                raise
+
+
+# --- CALL THE FUNCTIONS ONCE ---
+if "db_initialized" not in st.session_state:
+    create_users_table()
+    create_queries_table()
+    create_replies_table()
+    st.session_state["db_initialized"] = True
+
 
 if "logged_in_expert" not in st.session_state:
     st.session_state["logged_in_expert"] = False
 
-# Hardcoded expert credentials (username: hashed_password)
+# Hardcoded expert credentials 
 EXPERTS = {
     "expert1": "a61a09545798dfa0f4f9a3d95e87fabbd66d49099ce0ab0c7c956097ee90238d",  # hash of "expertpass1"
     "expert2": "e74d6129f0b15bd497c8ebb6f75742b3517d72b5d39431710dc498ef144b8121",  # hash of "expertpass2"
@@ -39,12 +91,27 @@ EXPERTS = {
 def make_hash(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+import time
+
 def add_user(username, email, password):
-    with sqlite3.connect('skin_disease_identification.db') as conn:
-        c = conn.cursor()
-        c.execute('INSERT INTO users(username, email, password) VALUES (?, ?, ?)', 
-                  (username, email, password))
-        conn.commit()
+    retries = 5
+    while retries > 0:
+        try:
+            with sqlite3.connect('skin_disease_identification.db', timeout=10) as conn:
+                c = conn.cursor()
+                c.execute(
+                    'INSERT INTO users(username, email, password) VALUES (?, ?, ?)',
+                    (username, email, password)
+                )
+                conn.commit()
+            break
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                time.sleep(1)  # wait before retrying
+                retries -= 1
+            else:
+                raise
+
 
 def login_user(username, password):
     with sqlite3.connect('skin_disease_identification.db') as conn:
@@ -74,11 +141,11 @@ def model_prediction(test_image_path):
     prediction = model.predict(x)
     return np.argmax(prediction)
 
-# Initialize app_mode in session_state if not set
+
 if "app_mode" not in st.session_state:
     st.session_state["app_mode"] = "Home"
 
-# Sidebar selectbox synced with session_state["app_mode"]
+# Sidebar selectbox 
 page_list = ["Home","Disease Identification","Learn More","DermaBot","Contact Expert","Login","Register","Expert Login","Expert Panel"]
 
 app_mode = st.sidebar.selectbox(
@@ -87,12 +154,12 @@ app_mode = st.sidebar.selectbox(
     index=page_list.index(st.session_state["app_mode"])
 )
 
-# Update session_state app_mode if user selects a different page manually
+
 if app_mode != st.session_state["app_mode"]:
     st.session_state["app_mode"] = app_mode
 
 
-# --- Page routing ---
+# --- Home Page  ---
 
 if st.session_state["app_mode"] == "Home":
     st.markdown("""
@@ -158,16 +225,18 @@ Have questions or want to collaborate with us? [Contact our team](#) to find out
 
     """)
 
-
+# --- Disease Identification Page  ---
 elif st.session_state["app_mode"] == "Disease Identification":
     if st.session_state.get("logged_in", False):
         disease_identification_page()
     else:
         st.warning("⚠ Please log in to access Disease Identification.")
 
+# --- Learn More Page  ---
 elif st.session_state["app_mode"] == "Learn More":
     learn_more_page()
 
+# --- Register Page  ---
 elif st.session_state["app_mode"] == "Register":
     st.subheader("Create New Account")
     new_user = st.text_input("Username", key="register_username")
@@ -185,6 +254,7 @@ elif st.session_state["app_mode"] == "Register":
         else:
             st.warning("⚠ Please enter username, email, and password.")
 
+# --- Login Page  ---
 elif st.session_state["app_mode"] == "Login":
     st.subheader("Login to Your Account")
     username = st.text_input("Username", key="login_username")
@@ -200,6 +270,7 @@ elif st.session_state["app_mode"] == "Login":
         else:
             st.error("❌ Invalid Username or Password")
 
+# ---Expert Login Page  ---
 elif st.session_state["app_mode"] == "Expert Login":
     st.subheader("Expert Login")
     input_expert_username = st.text_input("Expert Username", key="input_expert_username")
@@ -213,7 +284,7 @@ elif st.session_state["app_mode"] == "Expert Login":
         else:
             st.error("❌ Invalid Expert Username or Password")
 
-    # Show button to enter Expert Panel after successful login
+   
     if st.session_state.get("logged_in_expert", False):
         if st.button("Go to Expert Panel"):
             st.session_state["app_mode"] = "Expert Panel"
@@ -229,7 +300,7 @@ if st.session_state.get("logged_in", False):
     st.sidebar.markdown(f"**Logged in as:** {st.session_state['username']}")
     if st.sidebar.button("Logout", key="user_logout"):
         st.session_state.clear()
-        st.session_state["app_mode"] = "Home"  # Reset to Home after logout
+        st.session_state["app_mode"] = "Home"  
         st.sidebar.success("✅ Logged out successfully")
 
 if st.session_state.get("logged_in_expert", False):
@@ -237,5 +308,12 @@ if st.session_state.get("logged_in_expert", False):
     if st.sidebar.button("Logout Expert", key="expert_logout"):
         st.session_state.pop("logged_in_expert", None)
         st.session_state.pop("expert_username", None)
-        st.session_state["app_mode"] = "Home"  # Reset to Home after expert logout
+        st.session_state["app_mode"] = "Home"  
         st.sidebar.success("✅ Expert logged out successfully")
+
+elif st.session_state["app_mode"] == "Contact Expert":
+    if st.session_state.get("logged_in", False):
+        contact_expert_page()
+    else:
+        st.warning("⚠ Please log in to contact an expert.")
+
