@@ -6,8 +6,11 @@ from tensorflow.keras.applications.mobilenet_v3 import preprocess_input
 import numpy as np
 from Disease_Identification import disease_identification_page
 from Learn_More import learn_more_page
+from records_page import records_page
 from expert_panel import expert_panel_page
 from contact_expert import contact_expert_page
+from chatbot import dermabot_page
+
 
 
 
@@ -43,7 +46,7 @@ def create_queries_table():
         conn.commit()
 
 
-# --- NEW FUNCTION FOR replies TABLE ---
+#---replies TABLE ---
 import time
 def create_replies_table():
     retries = 5
@@ -78,6 +81,12 @@ if "db_initialized" not in st.session_state:
     create_replies_table()
     st.session_state["db_initialized"] = True
 
+from records_page import create_records_table
+
+# Initialize the records table once
+if "records_table_created" not in st.session_state:
+    create_records_table()
+    st.session_state["records_table_created"] = True
 
 if "logged_in_expert" not in st.session_state:
     st.session_state["logged_in_expert"] = False
@@ -146,7 +155,7 @@ if "app_mode" not in st.session_state:
     st.session_state["app_mode"] = "Home"
 
 # Sidebar selectbox 
-page_list = ["Home","Disease Identification","Learn More","DermaBot","Contact Expert","Login","Register","Expert Login","Expert Panel"]
+page_list = ["Home","Disease Identification","Learn More","DermaBot","Contact Expert","Records","Login","Register","Expert Login","Expert Panel"]
 
 app_mode = st.sidebar.selectbox(
     "Select Page",
@@ -235,6 +244,15 @@ elif st.session_state["app_mode"] == "Disease Identification":
 # --- Learn More Page  ---
 elif st.session_state["app_mode"] == "Learn More":
     learn_more_page()
+
+
+# --- Records Page  ---
+elif st.session_state["app_mode"] == "Records":
+    records_page()
+
+elif st.session_state["app_mode"] == "DermaBot":
+    dermabot_page()
+
 
 # --- Register Page  ---
 elif st.session_state["app_mode"] == "Register":
