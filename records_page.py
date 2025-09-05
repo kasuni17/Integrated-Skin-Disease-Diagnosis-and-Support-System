@@ -2,10 +2,8 @@ import streamlit as st
 import sqlite3
 import os
 
-# This assumes you have the disease info in recommendation.py
 from recommendation import Enfeksiyonel, Ekzama, Akne, Pigment, Benign, Malign
 
-# Map class index to labels and info
 CLASS_INFO = {
     'Enfeksiyonel': Enfeksiyonel,
     'Ekzama': Ekzama,
@@ -14,7 +12,6 @@ CLASS_INFO = {
     'Benign': Benign,
     'Malign': Malign
 }
-
 def create_records_table():
     """Create table for storing user predictions if not exists"""
     with sqlite3.connect('skin_disease_identification.db') as conn:
@@ -30,7 +27,6 @@ def create_records_table():
             )
         ''')
         conn.commit()
-
 def add_record(user_id, image_name, predicted_disease):
     """Add a new prediction record"""
     with sqlite3.connect('skin_disease_identification.db') as conn:
@@ -54,16 +50,14 @@ def fetch_user_records(user_id):
         return c.fetchall()
 
 def records_page():
-    st.title("📜 Your Previous Predictions")
+    st.title(" Your Previous Predictions")
 
     if not st.session_state.get("logged_in", False):
-        st.warning("⚠ Please log in to view your records.")
+        st.warning(" Please log in to view your records.")
         return
 
-    # Create table if not exists
     create_records_table()
 
-    # Get user_id from database
     username = st.session_state['username']
     with sqlite3.connect('skin_disease_identification.db') as conn:
         c = conn.cursor()
@@ -74,14 +68,12 @@ def records_page():
             return
         user_id = user_data[0]
 
-    # Fetch user records
     records = fetch_user_records(user_id)
 
     if not records:
         st.info("You have no previous predictions yet.")
         return
 
-    # Display records
     for rec in records:
         image_name, predicted_disease, created_at = rec
         st.markdown(f"### Prediction on {created_at}")
@@ -89,7 +81,6 @@ def records_page():
         disease_info = CLASS_INFO.get(predicted_disease, "No information available")
         st.markdown(disease_info)
 
-        # Display image if exists
         if os.path.exists(image_name):
             st.image(image_name)
         else:

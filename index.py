@@ -12,8 +12,6 @@ from contact_expert import contact_expert_page
 from chatbot import dermabot_page
 
 
-
-
 # Database setup
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -74,7 +72,6 @@ def create_replies_table():
                 raise
 
 
-# --- CALL THE FUNCTIONS ONCE ---
 if "db_initialized" not in st.session_state:
     create_users_table()
     create_queries_table()
@@ -116,7 +113,7 @@ def add_user(username, email, password):
             break
         except sqlite3.OperationalError as e:
             if "database is locked" in str(e):
-                time.sleep(1)  # wait before retrying
+                time.sleep(1)  
                 retries -= 1
             else:
                 raise
@@ -154,7 +151,7 @@ def model_prediction(test_image_path):
 if "app_mode" not in st.session_state:
     st.session_state["app_mode"] = "Home"
 
-# Sidebar selectbox 
+# Sidebar 
 page_list = ["Home","Disease Identification","Learn More","DermaBot","Contact Expert","Records","Login","Register","Expert Login","Expert Panel"]
 
 app_mode = st.sidebar.selectbox(
@@ -195,19 +192,19 @@ By integrating AI into dermatological analysis, we offer a reliable support syst
 
 #### **Key Features of the Platform**
 
-- ✅ **Automated Image Prediction**  
+-  **Automated Image Prediction**  
   Upload images and receive AI-generated analysis instantly.
 
-- 🧠 **Advanced Deep Learning Model**  
+-  **Advanced Deep Learning Model**  
   Built using cutting-edge neural networks trained on thousands of expert-labeled skin images.
 
-- 🔍 **Interactive Visual Feedback**  
+-  **Interactive Visual Feedback**  
   Results are accompanied by visual cues and probabilities to increase understanding.
 
-- 📘 **Support and Resources**  
+-  **Support and Resources**  
   Learn about causes, symptoms, and general care tips to guide your next steps.
 
-- 🔐 **Secure and Confidential**  
+-  **Secure and Confidential**  
   Your data remains private. No images are stored or shared.
 
 ---
@@ -222,9 +219,9 @@ By integrating AI into dermatological analysis, we offer a reliable support syst
 
 #### **Get Started Today**
 
-- 📤 **Upload Your Image** to begin an instant analysis.
-- 📊 **View Results and Insights** to learn more about your skin health.
-- 📚 **Explore Support Resources** for education and next steps.
+-  **Upload Your Image** to begin an instant analysis.
+-  **View Results and Insights** to learn more about your skin health.
+-  **Explore Support Resources** for education and next steps.
 
 ---
 
@@ -239,7 +236,7 @@ elif st.session_state["app_mode"] == "Disease Identification":
     if st.session_state.get("logged_in", False):
         disease_identification_page()
     else:
-        st.warning("⚠ Please log in to access Disease Identification.")
+        st.warning(" Please log in to access Disease Identification.")
 
 # --- Learn More Page  ---
 elif st.session_state["app_mode"] == "Learn More":
@@ -250,6 +247,7 @@ elif st.session_state["app_mode"] == "Learn More":
 elif st.session_state["app_mode"] == "Records":
     records_page()
 
+# --- ChatBot Page  ---
 elif st.session_state["app_mode"] == "DermaBot":
     dermabot_page()
 
@@ -265,12 +263,12 @@ elif st.session_state["app_mode"] == "Register":
         if new_user and new_email and new_password:
             try:
                 add_user(new_user, new_email, make_hash(new_password))
-                st.success("✅ Account created successfully!")
+                st.success(" Account created successfully!")
                 st.info("Please go to Login page to log in.")
             except sqlite3.IntegrityError:
-                st.error("❌ Username already exists.")
+                st.error(" Username already exists.")
         else:
-            st.warning("⚠ Please enter username, email, and password.")
+            st.warning(" Please enter username, email, and password.")
 
 # --- Login Page  ---
 elif st.session_state["app_mode"] == "Login":
@@ -284,9 +282,9 @@ elif st.session_state["app_mode"] == "Login":
         if result:
             st.session_state["logged_in"] = True
             st.session_state["username"] = username
-            st.success(f"✅ Logged in as {username}")
+            st.success(f" Logged in as {username}")
         else:
-            st.error("❌ Invalid Username or Password")
+            st.error(" Invalid Username or Password")
 
 # ---Expert Login Page  ---
 elif st.session_state["app_mode"] == "Expert Login":
@@ -298,9 +296,9 @@ elif st.session_state["app_mode"] == "Expert Login":
         if check_expert_login(input_expert_username, input_expert_password):
             st.session_state["logged_in_expert"] = True
             st.session_state["expert_username"] = input_expert_username
-            st.success(f"✅ Expert {input_expert_username} logged in successfully!")
+            st.success(f" Expert {input_expert_username} logged in successfully!")
         else:
-            st.error("❌ Invalid Expert Username or Password")
+            st.error(" Invalid Expert Username or Password")
 
    
     if st.session_state.get("logged_in_expert", False):
@@ -311,7 +309,7 @@ elif st.session_state["app_mode"] == "Expert Panel":
     if st.session_state.get("logged_in_expert", False):
         expert_panel_page()
     else:
-        st.warning("⚠ Please log in as an expert to access this page.")
+        st.warning(" Please log in as an expert to access this page.")
 
 # Sidebar logout buttons
 if st.session_state.get("logged_in", False):
@@ -319,7 +317,7 @@ if st.session_state.get("logged_in", False):
     if st.sidebar.button("Logout", key="user_logout"):
         st.session_state.clear()
         st.session_state["app_mode"] = "Home"  
-        st.sidebar.success("✅ Logged out successfully")
+        st.sidebar.success(" Logged out successfully")
 
 if st.session_state.get("logged_in_expert", False):
     st.sidebar.markdown(f"**Expert Logged in as:** {st.session_state['expert_username']}")
@@ -327,11 +325,11 @@ if st.session_state.get("logged_in_expert", False):
         st.session_state.pop("logged_in_expert", None)
         st.session_state.pop("expert_username", None)
         st.session_state["app_mode"] = "Home"  
-        st.sidebar.success("✅ Expert logged out successfully")
+        st.sidebar.success(" Expert logged out successfully")
 
 elif st.session_state["app_mode"] == "Contact Expert":
     if st.session_state.get("logged_in", False):
         contact_expert_page()
     else:
-        st.warning("⚠ Please log in to contact an expert.")
+        st.warning(" Please log in to contact an expert.")
 

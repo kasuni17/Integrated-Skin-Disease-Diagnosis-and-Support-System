@@ -1,11 +1,11 @@
 import streamlit as st
 
 def learn_more_page():
-    st.title("🦠 Learn More About Your Skin Condition")
+    st.title(" Learn More About Your Skin Condition")
 
     if "predicted_condition" in st.session_state:
         condition = st.session_state.predicted_condition
-        st.subheader(f"📌 Condition: **{condition}**")
+        st.subheader(f" Condition: **{condition}**")
 
         st.write("Based on your uploaded skin image, we have provided an educational video to help you understand this condition better.")
 
